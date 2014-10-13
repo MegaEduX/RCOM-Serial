@@ -1,7 +1,11 @@
-/*Non-Canonical Input Processing*/
+/*
+ * RCOM - Sending Part
+ * Eduardo Almeida and Scrublord Santiago
+ */
 
 #include <sys/types.h>
 #include <sys/stat.h>
+
 #include <fcntl.h>
 #include <termios.h>
 #include <stdio.h>
@@ -15,6 +19,8 @@
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 #define FALSE 0
 #define TRUE 1
+
+#define DEBUG 0
 
 #define F 0x7E
 #define A 0x03
@@ -38,8 +44,12 @@ typedef enum {
 kStateMachine state = kStateMachineStart;
 
 void timeoutReached() {
-    STOP = TRUE;
-    READ_TIMEOUT = TRUE;
+    if (STOP == FALSE) {
+	printf("Timeout reached!\n");
+	
+	STOP = TRUE;
+	READ_TIMEOUT = TRUE;
+    }
 }
 
 /*int sendAsStopAndWait(char *message) {
@@ -77,28 +87,39 @@ int sendSetupMessage(int fd) {
 }
 
 int readUaMessage(int fd) {
+    //	printf("I reached the beginning of readUaMessage, mon!\n");
+    
     char buf[255];
     
     unsigned int rcv_error = FALSE;
     
     unsigned char UA[5];
     
+    state = kStateMachineStart;
+    
     signal(SIGALRM, timeoutReached);
     
     alarm(TIMEOUT);
+
+    STOP = FALSE;
     
     while (STOP == FALSE) {
+	if (state == kStateMachineStop)
+	    break;	
+	
         int res = read(fd, buf, 1);
 
 	if (READ_TIMEOUT)
 	    return 1;
         
         buf[res] = 0;
+	
+	printf("I got 'dis: %.2x", buf[0]);
         
         switch (state) {
 	    case kStateMachineStart:
 		if (buf[0] == F)
-		    UA[0] = F;
+		    UA[state] = F;
 		else {
 		    rcv_error = TRUE;
 		    
@@ -110,8 +131,8 @@ int readUaMessage(int fd) {
 		break;
 	   
 	    case kStateMachineFlagRcv:
-		if (buf[0] == F)
-		    UA[0] = F;
+		if (buf[0] == A)
+		    UA[state] = A;
 		else {
 		    rcv_error = TRUE;
 		    
@@ -123,8 +144,8 @@ int readUaMessage(int fd) {
 		break;
 	   
 	    case kStateMachineARcv:
-		if (buf[0] == F)
-		    UA[0] = F;
+		if (buf[0] == C_UA)
+		    UA[state] = C_UA;
 		else {
 		    rcv_error = TRUE;
 		    
@@ -136,8 +157,8 @@ int readUaMessage(int fd) {
 		break;
 	   
 	    case kStateMachineCRcv:
-		if (buf[0] == F)
-		    UA[0] = F;
+		if (buf[0] == (UA[1] ^ UA[2]))
+		    UA[state] = (UA[1] ^ UA[2]);
 		else {
 		    rcv_error = TRUE;
 		    
@@ -150,7 +171,7 @@ int readUaMessage(int fd) {
 	   
 	    case kStateMachineBccOkay:
 		if (buf[0] == F)
-		    UA[0] = F;
+		    UA[state] = F;
 		else {
 		    rcv_error = TRUE;
 		    
@@ -159,6 +180,13 @@ int readUaMessage(int fd) {
 
 		state = kStateMachineStop;
 		
+		break;
+	    
+	    default:
+		printf("We got more data than expected!\n");
+		
+		rcv_error = TRUE;		
+
 		break;
 	}
       
@@ -171,34 +199,57 @@ int readUaMessage(int fd) {
 	    STOP = TRUE;
 	}
     }
+    
+    STOP = TRUE;
+
+#if DEBUG
+
+    if (!rcv_error)
+	printf("[Successful]");
+    else
+	printf("[Error]");
+    
+    printf(" I got 'dis, mon! [%.2x] [%.2x] [%.2x] [%.2x] [%.2x]", UA[0], UA[1], UA[2], UA[3], UA[4]);
+
+#endif
 
     return rcv_error;
 }
 
-void doEverything(int fd) {
+void llopen(int fd) {
     int res = sendSetupMessage(fd);
        
-    printf("Written %d bytes.\n", res);
+    printf("[llopen] Establishing connection - written %d bytes.\n", res);
     
-    printf("Reading message now...\n");
+    //    Snorlax used rest!
+    //    It's fast asleep.
+    
+    sleep(3);
+    
+    //    Snorlax woke up!
+    //    Snorlax used snore!
+    
+    printf("[llopen] Reading UA...\n");
     
     if (!readUaMessage(fd))
-	printf("Connection established!\n");
+	printf("[llopen] Connection established!\n");
     else {
-	doEverything(fd);
+	printf("[llopen] Connection failed - retrying...\n");
+        
+        //    Snorlax is fast asleep.
 	
-        printf("Connection failed - retrying...\n");
+	llopen(fd);
     }
 }
 
-int main(int argc, char** argv) {
-    struct termios oldtio,newtio;
+int main(int argc, char **argv) {
+    struct termios oldtio, newtio;
 
-    printf("Waiting for connection... ");
+    printf("[serialmain] Waiting for connection...\n");
 
     int fd = open(MODEMDEVICE, O_RDWR | O_NOCTTY );
 
-    printf("Connected!\n");
+    printf("[serialmain] Connected!\n");
 
     if (fd < 0) {
 	perror(MODEMDEVICE);
@@ -206,18 +257,20 @@ int main(int argc, char** argv) {
 	exit(-1);
     }
 
-    if (tcgetattr(fd,&oldtio) == -1) { /* save current port settings */
+    if (tcgetattr(fd,&oldtio) == -1) {
         perror("tcgetattr");
 	
         exit(-1);
     }
 
     bzero(&newtio, sizeof(newtio));
+    
     newtio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
     newtio.c_iflag = IGNPAR;
     newtio.c_oflag = 0;
-    
-    newtio.c_lflag = 0;
+    //	  newtio.c_lflag = 0;
+    //    These guys (usually) know what they are doing - http://stackoverflow.com/questions/2917881/how-to-implement-a-timeout-in-read-function-call
+    newtio.c_lflag &= ~ICANON;
 
     newtio.c_cc[VTIME]    = TIMEOUT * 10;   /* inter-character timer unused */
     newtio.c_cc[VMIN]     = 1;   /* blocking read until 5 chars received */
@@ -229,7 +282,7 @@ int main(int argc, char** argv) {
         exit(-1);
     }
     
-    doEverything(fd);
+    llopen(fd);
     
     tcsetattr(fd, TCSANOW, &oldtio);
     close(fd);
