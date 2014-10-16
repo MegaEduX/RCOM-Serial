@@ -41,6 +41,14 @@ typedef enum {
     kStateMachineStop
 } kStateMachine;
 
+typedef enum {
+    kControlFlagTypeSET,
+    kControlFlagTypeDISC,
+    kControlFlagTypeUA,
+    kControlFlagTypeRR,
+    kControlFlagTypeREJ
+} kControlFlagType;
+
 kStateMachine state = kStateMachineStart;
 
 void timeoutReached() {
@@ -72,18 +80,80 @@ void timeoutReached() {
     }
 }*/
 
-int sendSetupMessage(int fd) {
+int setupNonInformationalMessage(char control, int fd) {
     unsigned char SET[5];
     
     SET[0] = F;
     SET[1] = A;
-    SET[2] = C;
+    SET[2] = control;
     SET[3] = SET[1] ^ SET[2];
     SET[4] = F;
     
     //	Do it!
     
     return write(fd, SET, sizeof(SET));
+}
+
+int sendInformationalMessage(int messageNumber, char *data, int dataLen, int fd) {
+    unsigned char *INF = malloc((6 + dataLen) * sizeof(char));
+    
+    unsigned char *baseptr = INF;
+    
+    (* baseptr) = F;
+    baseptr++;
+    
+    (* baseptr) = A;
+    baseptr++;
+    
+    (* baseptr) = (messageNumber % 16) << 4;
+    baseptr++;
+
+    int i = 0;
+    
+    for (i = 0; i < dataLen; i++) {
+	(* baseptr) = data;
+	
+	data++;
+	baseptr++;
+    }
+
+    (* baseptr) = 0x00;	//    'Dis ain't right, mon!
+    baseptr++;
+    
+    (* baseptr) = F;
+
+}
+
+char getControlFlag(kControlFlagType type, int ackNumber) {
+    switch (type) {
+
+	case kControlFlagTypeSET:
+
+	    return 0x03;
+
+	case kControlFlagTypeDISC:
+
+	    return 0x0B;
+
+	case kControlFlagTypeUA:
+
+	    return 0x07;
+
+	case kControlFlagTypeRR:
+
+	    return (ackNumber % 32) << 5 | 0x05;
+
+	case kControlFlagTypeREJ:
+
+	    return (ackNumber % 32) << 5 | 0x01;
+
+	default:
+
+	    printf("'Eh, something isn't right mon!\n");
+
+	    return 0x00;
+
+    }
 }
 
 int readUaMessage(int fd) {
@@ -108,13 +178,15 @@ int readUaMessage(int fd) {
 	    break;	
 	
         int res = read(fd, buf, 1);
+	
+	//    Implement async, slides last page!
 
 	if (READ_TIMEOUT)
 	    return 1;
         
         buf[res] = 0;
 	
-	printf("I got 'dis: %.2x", buf[0]);
+	printf("I got 'dis: %.2x\n", buf[0]);
         
         switch (state) {
 	    case kStateMachineStart:
@@ -216,8 +288,14 @@ int readUaMessage(int fd) {
     return rcv_error;
 }
 
+int readAckMessage(int fd) {
+    //	The darker the night, the brighter the stars!
+    
+    
+}
+
 void llopen(int fd) {
-    int res = sendSetupMessage(fd);
+    int res = setupNonInformationalMessage(getControlFlag(kControlFlagTypeSET, 0), fd);
        
     printf("[llopen] Establishing connection - written %d bytes.\n", res);
     
