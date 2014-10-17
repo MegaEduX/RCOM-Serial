@@ -1,6 +1,6 @@
 /*
  * RCOM - Sending Part
- * Eduardo Almeida and Scrublord Santiago
+ * Grupo XXX
  */
 
 #include <sys/types.h>
@@ -17,14 +17,7 @@
 
 #include <unistd.h>
 
-#define BAUDRATE B38400
-#define MODEMDEVICE "/dev/ttyS4"
-#define _POSIX_SOURCE 1 /* POSIX compliant source */
-
-#define false 0
-#define true 1
-
-#define DEBUG 0
+#include "Defines.h"
 
 #define F 0x7E
 #define A 0x03
