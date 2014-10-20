@@ -19,45 +19,8 @@
 
 #include "Defines.h"
 
-#define F 0x7E
-#define A 0x03
-#define C 0x03
-#define C_UA 0x07
-
-#define TIMEOUT 3
-
-volatile int _stop = false;
-volatile int _read_timeout = false;
-volatile int _got_data = false;
-
-int _llopen_times_retried = 0;
-
-typedef enum {
-    kStateMachineStart,
-    kStateMachineFlagRcv,
-    kStateMachineARcv,
-    kStateMachineCRcv,
-    kStateMachineBccOkay,
-    kStateMachineStop
-} kStateMachine;
-
-typedef enum {
-    kControlFlagTypeSET,
-    kControlFlagTypeDISC,
-    kControlFlagTypeUA,
-    kControlFlagTypeRR,
-    kControlFlagTypeREJ
-} kControlFlagType;
-
-kStateMachine state = kStateMachineStart;
-
-void timeoutReached() {
-    if (_stop == false) {
-        printf("Timeout reached!\n");
-        
-        _stop = true;
-        _read_timeout = true;
-    }
+void timeoutHandler() {
+    _stop = true;
 }
 
 int setupNonInformationalMessage(char control, int fd) {
@@ -72,7 +35,7 @@ int setupNonInformationalMessage(char control, int fd) {
     return write(fd, SET, sizeof(SET));
 }
 
-int sendInformationalMessage(int messageNumber, char *data, int dataLen, int fd) {
+int sendInformationalMessage(int messageNumber, char *data, int dataLen, char *bcc, int bccLen, int fd) {
     unsigned char *INF = malloc((6 + dataLen) * sizeof(char));
     
     unsigned char *baseptr = INF;
@@ -83,7 +46,7 @@ int sendInformationalMessage(int messageNumber, char *data, int dataLen, int fd)
     (* baseptr) = A;
     baseptr++;
     
-    (* baseptr) = (messageNumber % 16) << 4;
+    (* baseptr) = messageNumber << 7;
     baseptr++;
     
     int i = 0;
@@ -95,8 +58,12 @@ int sendInformationalMessage(int messageNumber, char *data, int dataLen, int fd)
         baseptr++;
     }
     
-    (* baseptr) = 0x00;             //    'Dis ain't right, mon! (It really isn't!)
-    baseptr++;
+    for (i = 0; i < bccLen, i++) {
+        (* baseptr) = (* bcc);      //  This is also untested. Same problem as above.
+        
+        bcc++;
+        baseptr++;
+    }
     
     (* baseptr) = F;
     
@@ -135,6 +102,36 @@ char getControlFlag(kControlFlagType type, int ackNumber) {
     }
 }
 
+char llwrite_calculateBcc(char *array, int length) {
+    int i = 1;
+    
+    char currentBcc = array[0];
+    
+    for (; i < length; i++)
+        currentBcc ^= array[i];
+    
+    return currentBcc;
+}
+
+char * llwrite_performStuffing(char *buffer, int length) {
+    //  To be implemented.
+    
+    char *stuffed = malloc(length * 2 * sizeof(char));  //  Worse case scenario!
+    
+    //  stuffed[i] or j or some crap then increment then whatever
+    
+    return buffer;
+}
+
+int llwrite(int fd, char *buffer, int length) {
+    char bcc = llwrite_calculateBcc(buffer, length);
+    
+    char *stuffedBuffer = llwrite_performStuffing(buffer, length);
+    char *stuffedBcc = llwrite_performStuffing(&bcc, 1);
+    
+    
+}
+
 int readUaMessage(int fd) {
     char buf[255];
     
@@ -142,26 +139,28 @@ int readUaMessage(int fd) {
     
     unsigned char UA[5];
     
-    state = kStateMachineStart;
+    kStateMachine state = kStateMachineStart;
     
     _stop = false;
-
+    
     int got_data_once = false;
+    
+    signal(SIGALRM, timeoutHandler);
+    
+    alarm(TIMEOUT);
     
     while (_stop == false) {
         if (state == kStateMachineStop)
-            break;
-        
-        printf("Issuing read command...\n");	
+            break;	
         
         int res;
         
-        while (true) {
-            if (!_got_data_once)
+        while (true && !_stop) {
+            if (!got_data_once)
                 sleep(2);
             
             if (_got_data) {
-                _got_data_once = true;
+                got_data_once = true;
                 
 		res = read(fd, buf, 1);
                 
@@ -169,9 +168,19 @@ int readUaMessage(int fd) {
             }
         }
         
+        if (_stop) {
+            rcv_error = true;
+
+            break;
+        }
+        
         buf[res] = 0;
+
+#if DEBUG
         
         printf("I got 'dis: %.2x\n", buf[0]);
+
+#endif
         
         switch (state) {
             case kStateMachineStart:
@@ -262,6 +271,8 @@ int readUaMessage(int fd) {
             _stop = true;
         }
     }
+    
+    alarm(0);
     
     _stop = true;
     
