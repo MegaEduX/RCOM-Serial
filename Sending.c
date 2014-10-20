@@ -112,7 +112,7 @@ char getControlFlag(kControlFlagType type, int ackNumber) {
             
         case kControlFlagTypeDISC:
             
-            return 0x0B;
+            return 0x0B; 
             
         case kControlFlagTypeUA:
             
@@ -120,11 +120,11 @@ char getControlFlag(kControlFlagType type, int ackNumber) {
             
         case kControlFlagTypeRR:
             
-            return (ackNumber % 32) << 5 | 0x05;
+            return ackNumber << 7 | 0x05;
             
         case kControlFlagTypeREJ:
             
-            return (ackNumber % 32) << 5 | 0x01;
+            return ackNumber << 7 | 0x01;
             
         default:
             
@@ -136,8 +136,6 @@ char getControlFlag(kControlFlagType type, int ackNumber) {
 }
 
 int readUaMessage(int fd) {
-    //    printf("I reached the beginning of readUaMessage, mon!\n");
-    
     char buf[255];
     
     unsigned int rcv_error = false;
@@ -146,27 +144,30 @@ int readUaMessage(int fd) {
     
     state = kStateMachineStart;
     
-    signal(SIGALRM, timeoutReached);
-    
-    alarm(TIMEOUT);
-    
     _stop = false;
+
+    int got_data_once = false;
     
     while (_stop == false) {
         if (state == kStateMachineStop)
             break;
         
-        sleep(TIMEOUT * 10);
+        printf("Issuing read command...\n");	
         
-        if (_read_timeout || !_got_data)
-            return 1;
+        int res;
         
-        int res = read(fd, buf, 1);
-        
-        _got_data = false;
-        
-        if (_read_timeout)
-            return 1;
+        while (true) {
+            if (!_got_data_once)
+                sleep(2);
+            
+            if (_got_data) {
+                _got_data_once = true;
+                
+		res = read(fd, buf, 1);
+                
+                break;
+            }
+        }
         
         buf[res] = 0;
         
@@ -327,7 +328,7 @@ int main(int argc, char **argv) {
     
     printf("[serialmain] Waiting for connection...\n");
     
-    int fd = open(MODEMDEVICE, O_RDWR | O_NOCTTY );
+    int fd = open(MODEMDEVICE, O_RDWR | O_NOCTTY);
     
     printf("[serialmain] Connected!\n");
     
@@ -363,11 +364,8 @@ int main(int argc, char **argv) {
     newtio.c_oflag = 0;
     newtio.c_lflag = 0;
     
-    //    These guys (usually) know what they are doing - http://stackoverflow.com/questions/2917881/how-to-implement-a-timeout-in-read-function-call
-    //  newtio.c_lflag &= ~ICANON;
-    
-    newtio.c_cc[VTIME]    = TIMEOUT * 10;   /* inter-character timer unused */
-    newtio.c_cc[VMIN]     = 1;   /* blocking read until 5 chars received */
+    newtio.c_cc[VTIME]    = 0;   /* Do Not Block! */
+    newtio.c_cc[VMIN]     = 1;   /* Minimum Characters to Read */
     
     tcflush(fd, TCIFLUSH);
     
@@ -377,6 +375,8 @@ int main(int argc, char **argv) {
     }
     
     llopen(fd);
+
+    //	Setting old terminal...
     
     tcsetattr(fd, TCSANOW, &oldtio);
     close(fd);
