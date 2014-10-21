@@ -19,11 +19,11 @@
 
 #define TIMEOUT 3
 
-volatile int _stop = false;
+/*  volatile int _stop = false;
 volatile int _read_timeout = false;
 volatile int _got_data = false;
 
-int _llopen_times_retried = 0;
+int _llopen_times_retried = 0;  */
 
 typedef enum {
     kStateMachineStart,
