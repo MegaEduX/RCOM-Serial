@@ -2,6 +2,9 @@
  * RCOM - Global Defines
  * Grupo XXX
  */
+ 
+#ifndef __DEFINES__
+#define __DEFINES__
 
 #define BAUDRATE B38400
 #define MODEMDEVICE "/dev/ttyS4"
@@ -41,3 +44,5 @@ typedef enum {
     kControlFlagTypeRR,
     kControlFlagTypeREJ
 } kControlFlagType;
+
+#endif

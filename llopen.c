@@ -26,9 +26,14 @@
 int _llopen_times_retried = 0;
 
 volatile int _llopen_stop = false;
+volatile int _llopen_got_data = false;
 
 void llopen_timeoutHandler() {
 	_llopen_stop = true;
+}
+
+void llopen_signalHandlerIO() {
+	_llopen_got_data = true;
 }
 
 int sendNonInformationalMessage(char control, int fd) {
@@ -52,7 +57,7 @@ int readUaMessage(int fd) {
 
 	kStateMachine state = kStateMachineStart;
 
-	_stop = false;
+	_llopen_stop = false;
 
 	int got_data_once = false;
 
@@ -60,26 +65,26 @@ int readUaMessage(int fd) {
 
 	alarm(TIMEOUT);
 
-	while (_stop == false) {
+	while (_llopen_stop == false) {
 		if (state == kStateMachineStop)
 			break;	
 
 		int res;
 
-		while (true && !_stop) {
+		while (true && !_llopen_stop) {
 			if (!got_data_once)
 				sleep(2);
 
-			if (_got_data) {
+			if (_llopen_got_data) {
 				got_data_once = true;
 
-		res = read(fd, buf, 1);
+				res = read(fd, buf, 1);
 
 				break;
 			}
 		}
 
-		if (_stop) {
+		if (_llopen_stop) {
 			rcv_error = true;
 
 			break;
@@ -174,18 +179,18 @@ int readUaMessage(int fd) {
 		}
 
 		if (buf[0] == '\0')
-			_stop = true;
+			_llopen_stop = true;
 
 		if (rcv_error) {
 			printf("Error in state %d (received %s).\n", state, buf);
 
-			_stop = true;
+			_llopen_stop = true;
 		}
 	}
 
 	alarm(0);
 
-	_stop = true;
+	_llopen_stop = true;
 
 #if DEBUG
 
@@ -233,8 +238,10 @@ int llopen_pt2(int fd) {
 
 		_llopen_times_retried++;
 
-		llopen(fd);
+		llopen_pt2(fd);
 	}
+	
+	return -1;
 }
 
 int llopen(int port, kApplicationState state) {
@@ -246,11 +253,13 @@ int llopen(int port, kApplicationState state) {
 	
 	//  Setup the signal (as per slide 36)...
 	
-	saio.sa_handler = signalHandlerIO;
+	struct sigaction saio;
+	
+	saio.sa_handler = llopen_signalHandlerIO;
 	saio.sa_flags = 0;
-	saio.sa_restorer = NULL;
+	//	saio.sa_restorer = NULL;
 	
 	sigaction(SIGIO, &saio, NULL);
 	
-	return llopen_pt2(fd);
+	return llopen_pt2(port);
 }

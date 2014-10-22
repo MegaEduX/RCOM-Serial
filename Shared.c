@@ -3,6 +3,10 @@
  * Grupo XXX
  */
 
+#include <stdio.h>
+
+#include "Shared.h"
+
 char getControlFlag(kControlFlagType type, int ackNumber) {
 	switch (type) {
 

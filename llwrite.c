@@ -19,6 +19,8 @@
  
 #include "llwrite.h"
 
+#include "Defines.h"
+
 char llwrite_calculateBcc(char *array, int length);
 char * llwrite_performStuffing(char *buffer, int length, int *destLength);
 int sendInformationalMessage(int messageNumber, char *data, int dataLen, char *bcc, int bccLen, int fd);

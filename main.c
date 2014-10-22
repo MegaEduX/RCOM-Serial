@@ -13,14 +13,15 @@
 
 #include <termios.h>
 
-void signalHandlerIO(int status) {
-    _got_data = true;
-}
+#include <unistd.h>
+#include <strings.h>
+
+#include "Defines.h"
+
+#include "llopen.h"
 
 int main(int argc, char **argv) {
     struct termios oldtio, newtio;
-    
-    struct sigaction saio;
     
     printf("[Serial Setup] Waiting for connection...\n");
     
@@ -68,6 +69,8 @@ int main(int argc, char **argv) {
     
     tcsetattr(fd, TCSANOW, &oldtio);
     close(fd);
+    
+    printf("All done! Terminating...\n");
     
     return 0;
 }

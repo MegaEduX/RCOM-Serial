@@ -3,6 +3,9 @@
  * Grupo XXX
  */
 
+#ifndef __APPLICATION_LAYER__
+#define __APPLICATION_LAYER__
+
 typedef enum {
 	kApplicationStateTransmitter,
 	kApplicationStateReceiver
@@ -17,3 +20,5 @@ typedef struct ApplicationLayer {
 ApplicationLayer *applicationLayerInstance;
 
 void alsetup(int fd, kApplicationState state);
+
+#endif
