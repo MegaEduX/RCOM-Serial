@@ -8,7 +8,7 @@
 
 #define BAUDRATE B38400
 #define MODEMDEVICE "/dev/ttyS4"
-#define _POSIX_SOURCE 1 /* POSIX compliant source */
+#define _POSIX_SOURCE 1
 
 #define false 0
 #define true 1
@@ -21,12 +21,6 @@
 #define C_UA 0x07
 
 #define TIMEOUT 3
-
-/*  volatile int _stop = false;
-volatile int _read_timeout = false;
-volatile int _got_data = false;
-
-int _llopen_times_retried = 0;  */
 
 typedef enum {
     kStateMachineStart,

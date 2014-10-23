@@ -6,6 +6,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <errno.h>
+
 #include <fcntl.h>
 
 #include <stdio.h>
@@ -214,9 +216,15 @@ int llopen_pt2(int fd) {
 	}
 
 	int res = sendNonInformationalMessage(getControlFlag(kControlFlagTypeSET, 0), fd);
-
+	
+	if (res == -1) {
+		printf("[llopen] Couldn't send setup message. Error: \"%s\".\n", strerror(errno));
+		
+		return -1;
+	}
+	
 	printf("[llopen] Establishing connection - written %d bytes.\n", res);
-
+	
 	//    Snorlax used rest!
 	//    It's fast asleep.
 

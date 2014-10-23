@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
         return -1;
     }
     
-    llopen(4, kApplicationStateTransmitter);
+    llopen(fd, kApplicationStateTransmitter);
     
     //  And back to original settings...
     
