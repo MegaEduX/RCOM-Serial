@@ -7,12 +7,14 @@
 #define __LINK_LAYER__
 
 typedef struct LinkLayer {
+	
 	char port[20];
 	int baudRate;
 
 	unsigned int sequenceNumber;
 	unsigned int timeout;
 	unsigned int maxRetries;
+	
 } LinkLayer;
 
 LinkLayer *linkLayerInstance;

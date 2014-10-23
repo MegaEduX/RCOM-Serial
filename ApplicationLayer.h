@@ -12,9 +12,11 @@ typedef enum {
 } kApplicationState;
 
 typedef struct ApplicationLayer {
+	
 	int fileDescriptor;
 	
 	kApplicationState state;
+	
 } ApplicationLayer;
 
 ApplicationLayer *applicationLayerInstance;
