@@ -13,7 +13,7 @@
 #define false 0
 #define true 1
 
-#define DEBUG 0
+#define DEBUG 1
 
 #define F 0x7E
 #define A 0x03

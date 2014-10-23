@@ -17,9 +17,7 @@
 #include "llwrite.h"
 #include "Defines.h"
 #include "Messaging.h"
-
-char llwrite_calculateBcc(char *array, int length);
-char * llwrite_performStuffing(char *buffer, int length, int *destLength);
+#include "Stuffing.h"
 
 char llwrite_calculateBcc(char *array, int length) {
 	int i = 1;
@@ -32,41 +30,14 @@ char llwrite_calculateBcc(char *array, int length) {
 	return currentBcc;
 }
 
-char * llwrite_performStuffing(char *buffer, int length, int *destLength) {
-	char *stuffed = malloc(length * 2 * sizeof(char));  //  Worse case scenario!
-
-	int i = 0, j = 0;
-
-	for (; i < length; i++) {
-
-		if (buffer[i] == 0x7e) {
-
-			stuffed[j++] = 0x7d;
-			stuffed[j++] = 0x5e;
-
-		} else if (buffer[i] == 0x7d) {
-
-			stuffed[j++] = 0x7d;
-			stuffed[j++] = 0x5d;
-
-		} else
-			stuffed[j++] = buffer[i];
-
-	}
-
-	(* destLength) = j;
-
-	return stuffed;
-}
-
 int llwrite(int fd, char *buffer, int length) {
 	char bcc = llwrite_calculateBcc(buffer, length);
 
 	int buflen = 0, bcclen = 0;
 
-	char *stuffedBuffer = llwrite_performStuffing(buffer, length, &buflen);
+	char *stuffedBuffer = performStuffing(buffer, length, &buflen);
 
-	char *stuffedBcc = llwrite_performStuffing(&bcc, 1, &bcclen);
+	char *stuffedBcc = performStuffing(&bcc, 1, &bcclen);
 
 	return sendInformationalMessage(linkLayerInstance->sequenceNumber, stuffedBuffer, buflen, stuffedBcc, bcclen, fd);
 }

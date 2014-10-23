@@ -206,7 +206,7 @@ int llclose_pt2(int fd) {
 		return -1;
 	}
 
-	printf("[llclose] Establishing connection - written %d bytes.\n", res);
+	printf("[llclose] Establishing termination - written %d bytes.\n", res);
 
 	sleep(3);
 

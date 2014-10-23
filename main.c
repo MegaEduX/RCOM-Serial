@@ -19,6 +19,7 @@
 #include "Defines.h"
 
 #include "llopen.h"
+#include "llwrite.h"
 #include "llclose.h"
 
 int main(int argc, char **argv) {
@@ -65,6 +66,8 @@ int main(int argc, char **argv) {
     }
     
     llopen(fd, kApplicationStateTransmitter);
+    
+    //  llwrite();
     
     llclose(fd);
     
