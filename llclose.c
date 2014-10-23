@@ -1,8 +1,7 @@
 /*
- * RCOM - llopen
+ * RCOM - llclose
  * Grupo XXX
  */
-
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -15,26 +14,26 @@
 #include <termios.h>
 #include <unistd.h>
 
-#include "llopen.h"
+#include "llclose.h"
 
 #include "Shared.h"
 #include "Defines.h"
 #include "Messaging.h"
 
-int _llopen_times_retried = 0;
+int _llclose_times_retried = 0;
 
-volatile int _llopen_stop = false;
-volatile int _llopen_got_data = false;
+volatile int _llclose_stop = false;
+volatile int _llclose_got_data = false;
 
-void llopen_timeoutHandler() {
-	_llopen_stop = true;
+void llclose_timeoutHandler() {
+	_llclose_stop = true;
 }
 
-void llopen_signalHandlerIO() {
-	_llopen_got_data = true;
+void llclose_signalHandlerIO() {
+	_llclose_got_data = true;
 }
 
-int readUaMessage(int fd) {
+int llclose_readDiscMessage(int fd) {
 	char buf[255];
 
 	unsigned int rcv_error = false;
@@ -43,25 +42,25 @@ int readUaMessage(int fd) {
 
 	kStateMachine state = kStateMachineStart;
 
-	_llopen_stop = false;
+	_llclose_stop = false;
 
 	int got_data_once = false;
 
-	signal(SIGALRM, llopen_timeoutHandler);
+	signal(SIGALRM, llclose_timeoutHandler);
 
 	alarm(TIMEOUT);
 
-	while (_llopen_stop == false) {
+	while (_llclose_stop == false) {
 		if (state == kStateMachineStop)
 			break;	
 
 		int res;
 
-		while (true && !_llopen_stop) {
+		while (true && !_llclose_stop) {
 			if (!got_data_once)
 				sleep(2);
 
-			if (_llopen_got_data) {
+			if (_llclose_got_data) {
 				got_data_once = true;
 
 				res = read(fd, buf, 1);
@@ -70,7 +69,7 @@ int readUaMessage(int fd) {
 			}
 		}
 
-		if (_llopen_stop) {
+		if (_llclose_stop) {
 			rcv_error = true;
 
 			break;
@@ -115,8 +114,8 @@ int readUaMessage(int fd) {
 
 			case kStateMachineARcv:
 
-				if (buf[0] == C_UA)
-					UA[state] = C_UA;
+				if (buf[0] == C_DISC)
+					UA[state] = C_DISC;
 				else {
 					rcv_error = true;
 
@@ -165,18 +164,18 @@ int readUaMessage(int fd) {
 		}
 
 		if (buf[0] == '\0')
-			_llopen_stop = true;
+			_llclose_stop = true;
 
 		if (rcv_error) {
 			printf("Error in state %d (received %s).\n", state, buf);
 
-			_llopen_stop = true;
+			_llclose_stop = true;
 		}
 	}
 
 	alarm(0);
 
-	_llopen_stop = true;
+	_llclose_stop = true;
 
 #if DEBUG
 
@@ -192,66 +191,58 @@ int readUaMessage(int fd) {
 	return rcv_error;
 }
 
-int llopen_pt2(int fd) {
-	if (_llopen_times_retried > 2) {
-		printf("[llopen] Couldn't establish a successful connection in %d tries, giving up...\n", _llopen_times_retried + 1);
+int llclose_pt2(int fd) {
+	if (_llclose_times_retried > 2) {
+		printf("[llclose] Couldn't establish a successful connection in %d tries, giving up...\n", _llclose_times_retried + 1);
 
 		return -1;
 	}
 
-	int res = sendNonInformationalMessage(getControlFlag(kControlFlagTypeSET, 0), fd);
-	
+	int res = sendNonInformationalMessage(getControlFlag(kControlFlagTypeDISC, 0), fd);
+
 	if (res == -1) {
-		printf("[llopen] Couldn't send setup message. Error: \"%s\".\n", strerror(errno));
-		
+		printf("[llclose] Couldn't send disconnection message. Error: \"%s\".\n", strerror(errno));
+
 		return -1;
 	}
-	
-	printf("[llopen] Establishing connection - written %d bytes.\n", res);
-	
-	//    Snorlax used rest!
-	//    It's fast asleep.
+
+	printf("[llclose] Establishing connection - written %d bytes.\n", res);
 
 	sleep(3);
 
-	//    Snorlax woke up!
-	//    Snorlax used snore!
+	printf("[llclose] Reading DISC...\n");
 
-	printf("[llopen] Reading UA...\n");
+	if (!llclose_readDiscMessage(fd)) {
+		printf("[llclose] Connection terminated!\n");
 
-	if (!readUaMessage(fd)) {
-		printf("[llopen] Connection established!\n");
-		
 		return 0;
 	} else {
-		printf("[llopen] Connection failed - retrying...\n");
+		printf("[llclose] Connection termination failed - retrying...\n");
 
 		//    Snorlax is fast asleep.
 
-		_llopen_times_retried++;
+		_llclose_times_retried++;
 
-		llopen_pt2(fd);
+		llclose_pt2(fd);
 	}
-	
+
 	return -1;
 }
 
-int llopen(int port, kApplicationState state) {
-	alsetup(port, state);
+int llclose(int fd) {
+	_llclose_times_retried = 0;
 	
-	_llopen_times_retried = 0;
-	
-	_llopen_stop = false;
-	_llopen_got_data = false;
+	_llclose_stop = false;
+	_llclose_got_data = false;
 	
 	//  Setup the signal (as per slide 36)...
 	
 	struct sigaction saio;
 	
-	saio.sa_handler = llopen_signalHandlerIO;
+	saio.sa_handler = llclose_signalHandlerIO;
 	saio.sa_flags = 0;
 	
 	sigaction(SIGIO, &saio, NULL);
 	
-	return llopen_pt2(port);
+	return llclose_pt2(fd);
 }

@@ -19,6 +19,7 @@
 #define A 0x03
 #define C 0x03
 #define C_UA 0x07
+#define C_DISC 0x0B
 
 #define TIMEOUT 3
 

@@ -7,58 +7,19 @@
 #include <sys/stat.h>
 
 #include <fcntl.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
-
 #include <termios.h>
-
 #include <unistd.h>
  
 #include "llwrite.h"
-
 #include "Defines.h"
+#include "Messaging.h"
 
 char llwrite_calculateBcc(char *array, int length);
 char * llwrite_performStuffing(char *buffer, int length, int *destLength);
-int sendInformationalMessage(int messageNumber, char *data, int dataLen, char *bcc, int bccLen, int fd);
-
-int sendInformationalMessage(int messageNumber, char *data, int dataLen, char *bcc, int bccLen, int fd) {
-	unsigned char *INF = malloc((6 + dataLen) * sizeof(char));
-
-	unsigned char *baseptr = INF;
-
-	(* baseptr) = F;
-	baseptr++;
-
-	(* baseptr) = A;
-	baseptr++;
-
-	(* baseptr) = messageNumber << 7;
-	baseptr++;
-
-	int i = 0;
-
-	for (i = 0; i < dataLen; i++) {
-		(* baseptr) = (* data);     //  I gotta check on this, though.
-
-		data++;
-		baseptr++;
-	}
-
-	for (i = 0; i < bccLen; i++) {
-		(* baseptr) = (* bcc);      //  This is also untested. Same problem as above.
-
-		bcc++;
-		baseptr++;
-	}
-
-	(* baseptr) = F;
-
-	return write(fd, INF, sizeof(INF));
-}
 
 char llwrite_calculateBcc(char *array, int length) {
 	int i = 1;

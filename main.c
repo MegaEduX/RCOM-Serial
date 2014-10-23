@@ -19,6 +19,7 @@
 #include "Defines.h"
 
 #include "llopen.h"
+#include "llclose.h"
 
 int main(int argc, char **argv) {
     struct termios oldtio, newtio;
@@ -64,6 +65,8 @@ int main(int argc, char **argv) {
     }
     
     llopen(fd, kApplicationStateTransmitter);
+    
+    llclose(fd);
     
     //  And back to original settings...
     
