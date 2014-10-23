@@ -142,7 +142,9 @@ int readUaMessage(int fd) {
 				break;
 
 			case kStateMachineBccOkay:
-
+				
+				printf("Got here!\n");
+				
 				if (buf[0] == F)
 					UA[state] = F;
 				else {
