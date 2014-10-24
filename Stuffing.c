@@ -37,7 +37,7 @@ char * performStuffing(char *buffer, int length, int *destLength) {
 char * performDestuffing(char *buffer, int length, int *destLength) {
 	char *destuffed = malloc(length * sizeof(char));	//	Worse case scenario!
 	
-	int i = 0; j = 0;
+	int i = 0, j = 0;
 	
 	for (; i < length; i++) {
 		
