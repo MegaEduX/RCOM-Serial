@@ -38,7 +38,11 @@ int main(int argc, char **argv) {
     
     char *path = malloc(256 * sizeof(char));
     
+    printf("before strcpy\n");
+    
     strcpy(path, argv[1]);
+    
+    printf("after strcpy\n");
     
     char *serialPort = NULL;
     
@@ -46,17 +50,14 @@ int main(int argc, char **argv) {
     
     int maxRetries = 3, timeout = 3;
     
-    if (argc > 2) {
+    if (argc > 2)
         serialPort = argv[2];
-    }
     
-    if (argc > 3) {
+    if (argc > 3)
         baudRate = atol(argv[3]);
-    }
     
-    if (argc > 4) {
+    if (argc > 4)
         maxRetries = atoi(argv[4]);
-    }
     
     llsetup(serialPort, baudRate, 0, timeout, maxRetries);
     
