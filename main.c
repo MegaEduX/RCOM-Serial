@@ -38,11 +38,9 @@ int main(int argc, char **argv) {
     
     char *path = malloc(256 * sizeof(char));
     
-    printf("before strcpy\n");
-    
     strcpy(path, argv[1]);
     
-    printf("after strcpy\n");
+    printf("Path: %s\n", path);
     
     char *serialPort = NULL;
     
