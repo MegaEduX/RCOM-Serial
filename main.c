@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
         char progname[512];
         strcpy(progname, argv[0]);
         
-        printf("Usage: %s file_to_send [serial_port [baud_rate [max_tries]]]\n", basename(progname));
+        printf("Usage: %s file_to_send [serial_port = /dev/ttyS4 [baud_rate = B38400 [max_tries = 3 [timeout = 3]]]]\n", basename(progname));
         
         return 0;
     }
@@ -40,17 +40,25 @@ int main(int argc, char **argv) {
     
     strcpy(path, argv[1]);
     
+    char *serialPort = NULL;
+    
+    long baudRate = B38400;
+    
+    int maxTries = 3, timeout = 3;
+    
     if (argc > 2) {
-        //  Serial Port
+        serialPort = argv[2];
     }
     
     if (argc > 3) {
-        //  Baud Rate
+        baudRate = atol(argv[3]);
     }
     
     if (argc > 4) {
-        //  Max Tries
+        maxTries = atoi(argv[4]);
     }
+    
+    llsetup(serialPort, baudRate, 0, timeout, maxRetries);
     
     struct termios oldtio, newtio;
     
@@ -79,7 +87,7 @@ int main(int argc, char **argv) {
     
     bzero(&newtio, sizeof(newtio));
     
-    newtio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
+    newtio.c_cflag = baudRate | CS8 | CLOCAL | CREAD;
     newtio.c_iflag = IGNPAR;
     newtio.c_oflag = 0;
     newtio.c_lflag = 0;
@@ -89,7 +97,7 @@ int main(int argc, char **argv) {
     
     tcflush(fd, TCIFLUSH);
     
-    if (tcsetattr(fd,TCSANOW,&newtio) == -1) {
+    if (tcsetattr(fd, TCSANOW, &newtio) == -1) {
         perror("tcsetattr");
         return -1;
     }
@@ -125,8 +133,8 @@ int main(int argc, char **argv) {
     tlvArray[0].value = &value;               //  Placeholder!
     
     tlvArray[1].type = 1;
-    tlvArray[1].length = strlen("filename");    //  Placeholder!
-    tlvArray[1].value = "filename";             //  Placeholder!
+    tlvArray[1].length = strlen(path);    //  Placeholder!
+    tlvArray[1].value = path;             //  Placeholder!
     
     char *beginPacket = makeControlPacket(kApplicationPacketControlStart, tlvArray, 2, &bplen);
     
@@ -145,7 +153,7 @@ int main(int argc, char **argv) {
         
         int i = 0, seq = 0;
         
-        while ((ch = fgetc(file)) != EOF && ch != '\n') {
+        while ((ch = fgetc(file)) != EOF) {
             if (i < 255)
                 buf[i] = ch;
             else
@@ -156,7 +164,19 @@ int main(int argc, char **argv) {
         
         char *dataPacket = makeDataPacket(seq, buf, i, &plen);
         
-        llwrite(fd, dataPacket, plen);
+        if (llwrite(fd, dataPacket, plen) == -1) {
+            //
+            //  Error, even after retrying!
+            //
+            //  We should re-setup and retry.
+            //
+            //  Failing for now...
+            //
+            
+            printf("Error in llwrite!\n");
+            
+            break;
+        }
         
         if (i < 255)
             finished = true;

@@ -32,6 +32,12 @@ void llwrite_signalHandlerIO() {
 	_llwrite_got_data = true;
 }
 
+typedef enum {
+	kAckMessageResultSuccess,
+	kAckMessageResultFailed,
+	kAckme	
+} kAckMessageResult;
+
 int readAckMessage(int fd) {
 	char buf[255];
 
@@ -215,15 +221,17 @@ int llwrite(int fd, char *buffer, int length) {
 	char *stuffedBcc = performStuffing(&bcc, 1, &bcclen);
 	
 	while (tries < maxRetries) {
-		if ((bytesSent = sendInformationalMessage(linkLayerInstance->sequenceNumber, stuffedBuffer, buflen, stuffedBcc, bcclen, fd)))
-			if (!readAckMessage(fd)) {
-				linkLayerInstance->sequenceNumber++;
+		if ((bytesSent = sendInformationalMessage(linkLayerInstance->sequenceNumber, stuffedBuffer, buflen, stuffedBcc, bcclen, fd))) {
+			lltoggle();		//	Toggle it.
 			
+			if (!readAckMessage(fd))
 				return bytesSent;
-			}
+			
+			lltoggle();		//	Erm, toggle-toggle?
+		}
 		
 		tries++;
 	}
 	
-	return 0;
+	return -1;
 }
