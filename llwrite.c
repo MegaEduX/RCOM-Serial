@@ -35,7 +35,7 @@ void llwrite_signalHandlerIO() {
 typedef enum {
 	kAckMessageResultSuccess,
 	kAckMessageResultFailed,
-	kAckme	
+	kAckMessageResultREJ
 } kAckMessageResult;
 
 int readAckMessage(int fd) {
@@ -90,6 +90,8 @@ int readAckMessage(int fd) {
 
 		switch (state) {
 			case kStateMachineStart:
+			
+				printf("Start: %.2x\n", buf[0]);
 
 				if (buf[0] == F)
 					ACK[state] = F;
@@ -104,6 +106,8 @@ int readAckMessage(int fd) {
 				break;
 
 			case kStateMachineFlagRcv:
+			
+				printf("Flag: %.2x\n", buf[0]);
 
 				if (buf[0] == A)
 					ACK[state] = A;
@@ -119,6 +123,10 @@ int readAckMessage(int fd) {
 
 			case kStateMachineARcv:
 				
+				printf("A: %.2x\n", buf[0]);
+			
+				linkLayerInstance->sequenceNumber = 1;
+				
 				if (buf[0] == makeControlFlag(kControlFlagTypeRR, linkLayerInstance->sequenceNumber) || 
 					buf[0] == makeControlFlag(kControlFlagTypeREJ, linkLayerInstance->sequenceNumber))
 					ACK[state] = buf[0];
@@ -133,6 +141,8 @@ int readAckMessage(int fd) {
 				break;
 
 			case kStateMachineCRcv:
+				
+				printf("C: %.2x\n", buf[0]);
 
 				if (buf[0] == (ACK[1] ^ ACK[2]))
 					ACK[state] = (ACK[1] ^ ACK[2]);
@@ -147,6 +157,8 @@ int readAckMessage(int fd) {
 				break;
 
 			case kStateMachineBccOkay:
+				
+				printf("BCC: %.2x\n", buf[0]);
 
 				if (buf[0] == F)
 					ACK[state] = F;
