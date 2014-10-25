@@ -240,6 +240,13 @@ int llwrite(int fd, char *buffer, int length) {
 			
 			lltoggle();		//	Toggle it.
 			
+			struct sigaction saio;
+			
+			saio.sa_handler = llwrite_signalHandlerIO;
+			saio.sa_flags = 0;
+			
+			sigaction(SIGIO, &saio, NULL);
+			
 			if (!readAckMessage(fd))
 				return bytesSent;
 			
