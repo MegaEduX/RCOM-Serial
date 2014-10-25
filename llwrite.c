@@ -221,13 +221,19 @@ int llwrite(int fd, char *buffer, int length) {
 	char *stuffedBcc = performStuffing(&bcc, 1, &bcclen);
 	
 	while (tries < maxRetries) {
+		printf("[llwrite] Sending I...\n");
+		
 		if ((bytesSent = sendInformationalMessage(linkLayerInstance->sequenceNumber, stuffedBuffer, buflen, stuffedBcc, bcclen, fd))) {
+			printf("[llwrite] Sent I. Waiting for ACK...\n");
+			
 			lltoggle();		//	Toggle it.
 			
 			if (!readAckMessage(fd))
 				return bytesSent;
 			
 			lltoggle();		//	Erm, toggle-toggle?
+			
+			printf("[llwrite] ACK failed. Retrying...");
 		}
 		
 		tries++;
