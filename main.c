@@ -91,8 +91,8 @@ int main(int argc, char **argv) {
     newtio.c_oflag = 0;
     newtio.c_lflag = 0;
     
-    newtio.c_cc[VTIME]    = 0;   /* Do Not Block! */
-    newtio.c_cc[VMIN]     = 1;   /* Minimum Characters to Read */
+    newtio.c_cc[VTIME]    = 5;   /* Do Not Block! */
+    newtio.c_cc[VMIN]     = 0;   /* Minimum Characters to Read */
     
     tcflush(fd, TCIFLUSH);
     
