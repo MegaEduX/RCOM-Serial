@@ -113,9 +113,8 @@ int readAckMessage(int fd) {
 
 			case kStateMachineARcv:
 				
-				//	The second argument on makeControlFlag isn't correct!
-				
-				if (buf[0] == makeControlFlag(kControlFlagTypeRR, 0) || buf[0] == makeControlFlag(kControlFlagTypeREJ, 0))
+				if (buf[0] == makeControlFlag(kControlFlagTypeRR, linkLayerInstance->sequenceNumber) || 
+					buf[0] == makeControlFlag(kControlFlagTypeREJ, linkLayerInstance->sequenceNumber))
 					ACK[state] = buf[0];
 				else {
 					rcv_error = true;
@@ -177,6 +176,9 @@ int readAckMessage(int fd) {
 	alarm(0);
 
 	_llwrite_stop = true;
+	
+	if (!rcv_error)
+		lltoggle();
 
 #if DEBUG
 

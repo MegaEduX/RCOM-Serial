@@ -8,6 +8,8 @@
 
 #include <fcntl.h>
 
+#include <libgen.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +27,31 @@
 #include "llclose.h"
 
 int main(int argc, char **argv) {
+    if (argc < 2) {
+        char progname[512];
+        strcpy(progname, argv[0]);
+        
+        printf("Usage: %s file_to_send [serial_port [baud_rate [max_tries]]]\n", basename(progname));
+        
+        return 0;
+    }
+    
+    char *path = malloc(256 * sizeof(char));
+    
+    strcpy(path, argv[1]);
+    
+    if (argc > 2) {
+        //  Serial Port
+    }
+    
+    if (argc > 3) {
+        //  Baud Rate
+    }
+    
+    if (argc > 4) {
+        //  Max Tries
+    }
+    
     struct termios oldtio, newtio;
     
     printf("[Serial Setup] Waiting for connection...\n");
@@ -69,12 +96,10 @@ int main(int argc, char **argv) {
     
     llopen(fd, kApplicationStateTransmitter);
     
-    const char *path = "/path/to/file";
-    
     FILE *file = fopen(path, "r");
     
     if (file == NULL) {
-        perror("An error has occoured while trying to open the specified file for reading.\n");
+        perror("fopen");
         return -1;
     }
     

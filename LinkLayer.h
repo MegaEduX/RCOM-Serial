@@ -21,4 +21,6 @@ LinkLayer *linkLayerInstance;
 
 void llsetup(char *port, int baudRate, unsigned int sequenceNumber, unsigned int timeout, unsigned int maxRetries);
 
+void lltoggle();
+
 #endif

@@ -18,3 +18,7 @@ void llsetup(char *port, int baudRate, unsigned int sequenceNumber, unsigned int
 	linkLayerInstance->timeout = timeout;
 	linkLayerInstance->maxRetries = maxRetries;
 }
+
+void lltoggle() {
+	linkLayerInstance->sequenceNumber = !(linkLayerInstance->sequenceNumber);
+}
