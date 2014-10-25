@@ -109,8 +109,8 @@ int readAckMessage(int fd) {
 			
 				printf("Flag: %.2x\n", buf[0]);
 
-				if (buf[0] == A)
-					ACK[state] = A;
+				if (buf[0] == A_ANSWER)
+					ACK[state] = A_ANSWER;
 				else {
 					rcv_error = true;
 
