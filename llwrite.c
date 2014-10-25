@@ -26,6 +26,8 @@ volatile int _llwrite_got_data = false;
 
 void llwrite_timeoutHandler() {
 	_llwrite_stop = true;
+	
+	printf("Timeout!\n");
 }
 
 void llwrite_signalHandlerIO() {
@@ -48,6 +50,7 @@ int readAckMessage(int fd) {
 	kStateMachine state = kStateMachineStart;
 
 	_llwrite_stop = false;
+	_llwrite_got_data = false;
 
 	int got_data_once = false;
 

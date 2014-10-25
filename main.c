@@ -129,11 +129,11 @@ int main(int argc, char **argv) {
     
     char value = (char) 1234;
     
-    tlvArray[0].value = &value;               //  Placeholder!
+    tlvArray[0].value = &value;             //  Placeholder!
     
     tlvArray[1].type = 1;
-    tlvArray[1].length = strlen(path);    //  Placeholder!
-    tlvArray[1].value = path;             //  Placeholder!
+    tlvArray[1].length = strlen(path);      //  Placeholder!
+    tlvArray[1].value = path;               //  Placeholder!
     
     char *beginPacket = makeControlPacket(kApplicationPacketControlStart, tlvArray, 2, &bplen);
     
