@@ -2,6 +2,7 @@
  * RCOM - llclose
  * Grupo XXX
  */
+
 #include <sys/types.h>
 #include <sys/stat.h>
 

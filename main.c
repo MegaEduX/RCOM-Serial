@@ -1,6 +1,6 @@
 /*
- * RCOM - Sending Part
- * Grupo XXX
+ *  RCOM - Main
+ *  Grupo XXX
  */
 
 #include <sys/types.h>
@@ -17,6 +17,7 @@
 #include <strings.h>
 
 #include "Defines.h"
+#include "ApplicationLayer.h"
 
 #include "llopen.h"
 #include "llwrite.h"
@@ -67,7 +68,83 @@ int main(int argc, char **argv) {
     
     llopen(fd, kApplicationStateTransmitter);
     
-    //  llwrite();
+    const char *path = "/path/to/file";
+    
+    FILE *file = fopen(path, "r");
+    
+    if (file == NULL) {
+        perror("An error has occoured while trying to open the specified file for reading.\n");
+        return -1;
+    }
+    
+    /*
+     *  Start Control Packet
+     */
+    
+    struct stat st;
+    
+    stat(path, &st);
+    
+    int size = st.st_size;
+    
+    int bplen = 0;
+    
+    TLVParameter *tlvArray = malloc(2 * sizeof(TLVParameter));
+    
+    tlvArray[0].type = 0;
+    tlvArray[0].length = sizeof(int);       //  Placeholder!
+    
+    char value = (char) 1234;
+    
+    tlvArray[0].value = &value;               //  Placeholder!
+    
+    tlvArray[1].type = 1;
+    tlvArray[1].length = strlen("filename");    //  Placeholder!
+    tlvArray[1].value = "filename";             //  Placeholder!
+    
+    char *beginPacket = makeControlPacket(kApplicationPacketControlStart, tlvArray, 2, &bplen);
+    
+    llwrite(fd, beginPacket, bplen);
+    
+    /*
+     *  Data Packets
+     */
+    
+    int finished = false;
+    
+    while (!finished) {
+        char ch;
+        
+        char *buf = malloc(255 * sizeof(char));
+        
+        int i = 0, seq = 0;
+        
+        while ((ch = fgetc(file)) != EOF && ch != '\n') {
+            if (i < 255)
+                buf[i] = ch;
+            else
+                break;
+        }
+        
+        int plen = 0;
+        
+        char *dataPacket = makeDataPacket(seq, buf, i, &plen);
+        
+        llwrite(fd, dataPacket, plen);
+        
+        if (i < 255)
+            finished = true;
+    }
+    
+    /*
+     *  End Control Packet
+     */
+    
+    int eplen = 0;
+    
+    char *endPacket = makeControlPacket(kApplicationPacketControlEnd, NULL, 0, &eplen);
+    
+    llwrite(fd, endPacket, eplen);
     
     llclose(fd);
     

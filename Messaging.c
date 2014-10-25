@@ -8,7 +8,15 @@
 
 #include "Messaging.h"
 
-#include "Defines.h"
+char makeControlFlag(kControlFlagType type, unsigned int nR) {
+	if (type != kControlFlagTypeRR || type != kControlFlagTypeREJ || nR > 1)
+		return 0x00;
+	
+	if (!nR)
+		return type;
+	
+	return (char) (type + 128);
+}
 
 int sendNonInformationalMessage(char control, int fd) {
 	unsigned char SET[5];

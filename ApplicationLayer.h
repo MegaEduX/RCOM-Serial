@@ -38,7 +38,7 @@ ApplicationLayer *applicationLayerInstance;
 
 void alsetup(int fd, kApplicationState state);
 
-char * makeDataPacket(int sequenceNumber, char *data, int dataLen);
-char * makeControlPacket(kApplicationPacketControl type, TLVParameter *tlvArray, int size);
+char * makeDataPacket(int sequenceNumber, char *data, int dataLen, int *packetLen);
+char * makeControlPacket(kApplicationPacketControl type, TLVParameter *tlvArray, int size, int *packetLen);
 
 #endif

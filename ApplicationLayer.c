@@ -14,7 +14,7 @@ void alsetup(int fd, kApplicationState state) {
 	applicationLayerInstance->state = state;
 }
 
-char * makeDataPacket(int sequenceNumber, char *data, int dataLen) {
+char * makeDataPacket(int sequenceNumber, char *data, int dataLen, int *packetLen) {
 	char *dataPacket = (char *) malloc(sizeof(char) * (4 + dataLen));
 	
 	dataPacket[0] = (char)(kApplicationPacketControlData);
@@ -27,10 +27,12 @@ char * makeDataPacket(int sequenceNumber, char *data, int dataLen) {
 	for (; j < dataLen; i++, j++)
 		dataPacket[i] = data[j];
 	
+	(* packetLen) = i;
+	
 	return dataPacket;
 }
 
-char * makeControlPacket(kApplicationPacketControl type, TLVParameter *tlvArray, int size) {
+char * makeControlPacket(kApplicationPacketControl type, TLVParameter *tlvArray, int size, int *packetLen) {
 	char *controlPacket = (char *) malloc(sizeof(char) * (1 + size));
 	
 	controlPacket[0] = (char)type;
@@ -46,6 +48,8 @@ char * makeControlPacket(kApplicationPacketControl type, TLVParameter *tlvArray,
 		for (; k < tlvArray[j].length; k++)
 			controlPacket[i++] = tlvArray[j].value[k];
 	}
+	
+	(* packetLen) = i;
 	
 	return controlPacket;
 }

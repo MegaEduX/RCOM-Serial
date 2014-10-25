@@ -19,6 +19,179 @@
 #include "Messaging.h"
 #include "Stuffing.h"
 
+int _llwrite_times_retried = 0;
+
+volatile int _llwrite_stop = false;
+volatile int _llwrite_got_data = false;
+
+void llwrite_timeoutHandler() {
+	_llwrite_stop = true;
+}
+
+void llwrite_signalHandlerIO() {
+	_llwrite_got_data = true;
+}
+
+int readAckMessage(int fd) {
+	char buf[255];
+
+	unsigned int rcv_error = false;
+
+	unsigned char ACK[5];
+
+	kStateMachine state = kStateMachineStart;
+
+	_llwrite_stop = false;
+
+	int got_data_once = false;
+
+	signal(SIGALRM, llwrite_timeoutHandler);
+
+	alarm(TIMEOUT);
+
+	while (_llwrite_stop == false) {
+		if (state == kStateMachineStop)
+			break;	
+
+		int res;
+
+		while (true && !_llwrite_stop) {
+			if (!got_data_once)
+				sleep(2);
+
+			if (_llwrite_got_data) {
+				got_data_once = true;
+
+				res = read(fd, buf, 1);
+
+				break;
+			}
+		}
+
+		if (_llwrite_stop) {
+			rcv_error = true;
+
+			break;
+		}
+
+		buf[res] = 0;
+
+#if DEBUG
+
+		printf("I got 'dis: %.2x\n", buf[0]);
+
+#endif
+
+		switch (state) {
+			case kStateMachineStart:
+
+				if (buf[0] == F)
+					ACK[state] = F;
+				else {
+					rcv_error = true;
+
+					break;
+				}
+
+				state = kStateMachineFlagRcv;
+
+				break;
+
+			case kStateMachineFlagRcv:
+
+				if (buf[0] == A)
+					ACK[state] = A;
+				else {
+					rcv_error = true;
+
+					break;
+				}
+
+				state = kStateMachineARcv;
+
+				break;
+
+			case kStateMachineARcv:
+				
+				//	The second argument on makeControlFlag isn't correct!
+				
+				if (buf[0] == makeControlFlag(kControlFlagTypeRR, 0) || buf[0] == makeControlFlag(kControlFlagTypeREJ, 0))
+					ACK[state] = buf[0];
+				else {
+					rcv_error = true;
+					
+					break;
+				}
+
+				state = kStateMachineCRcv;
+
+				break;
+
+			case kStateMachineCRcv:
+
+				if (buf[0] == (ACK[1] ^ ACK[2]))
+					ACK[state] = (ACK[1] ^ ACK[2]);
+				else {
+					rcv_error = true;
+
+					break;
+				}
+
+				state = kStateMachineBccOkay;
+
+				break;
+
+			case kStateMachineBccOkay:
+
+				if (buf[0] == F)
+					ACK[state] = F;
+				else {
+					rcv_error = true;
+
+					break;
+				}
+
+				state = kStateMachineStop;
+
+				break;
+
+			default:
+
+				printf("We got more data than expected!\n");
+
+				rcv_error = true;
+
+				break;
+		}
+
+		if (buf[0] == '\0')
+			_llwrite_stop = true;
+
+		if (rcv_error) {
+			printf("Error in state %d (received %s).\n", state, buf);
+
+			_llwrite_stop = true;
+		}
+	}
+
+	alarm(0);
+
+	_llwrite_stop = true;
+
+#if DEBUG
+
+	if (!rcv_error)
+		printf("[Successful]");
+	else
+		printf("[Error]");
+
+	printf(" I got 'dis, mon! [%.2x] [%.2x] [%.2x] [%.2x] [%.2x]\n", ACK[0], ACK[1], ACK[2], ACK[3], ACK[4]);
+
+#endif
+
+	return rcv_error;
+}
+
 char llwrite_calculateBcc(char *array, int length) {
 	int i = 1;
 
@@ -33,11 +206,22 @@ char llwrite_calculateBcc(char *array, int length) {
 int llwrite(int fd, char *buffer, int length) {
 	char bcc = llwrite_calculateBcc(buffer, length);
 
-	int buflen = 0, bcclen = 0;
+	int buflen = 0, bcclen = 0, bytesSent = 0, maxRetries = TIMEOUT, tries = 0;
 
 	char *stuffedBuffer = performStuffing(buffer, length, &buflen);
 
 	char *stuffedBcc = performStuffing(&bcc, 1, &bcclen);
-
-	return sendInformationalMessage(linkLayerInstance->sequenceNumber, stuffedBuffer, buflen, stuffedBcc, bcclen, fd);
+	
+	while (tries < maxRetries) {
+		if ((bytesSent = sendInformationalMessage(linkLayerInstance->sequenceNumber, stuffedBuffer, buflen, stuffedBcc, bcclen, fd)))
+			if (!readAckMessage(fd)) {
+				linkLayerInstance->sequenceNumber++;
+			
+				return bytesSent;
+			}
+		
+		tries++;
+	}
+	
+	return 0;
 }
