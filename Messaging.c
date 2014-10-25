@@ -51,7 +51,7 @@ int sendInformationalMessage(int messageNumber, char *data, int dataLen, char *b
 	for (i = 0; i < dataLen; i++) {
 		(* baseptr) = (* data);     //  I gotta check on this, though.
 		
-		printf("%.2x\n", *data);
+		//	printf("%.2x\n", *data);
 
 		data++;
 		baseptr++;
@@ -60,7 +60,7 @@ int sendInformationalMessage(int messageNumber, char *data, int dataLen, char *b
 	for (i = 0; i < bccLen; i++) {
 		(* baseptr) = (* bcc);      //  This is also untested. Same problem as above.
 		
-		printf("%.2x\n", *bcc);
+		//	printf("%.2x\n", *bcc);
 		
 		bcc++;
 		baseptr++;

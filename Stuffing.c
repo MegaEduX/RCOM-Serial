@@ -39,7 +39,7 @@ char * performDestuffing(char *buffer, int length, int *destLength) {
 	
 	int i = 0, j = 0;
 	
-	for (; i < length; i++) {
+	for (; i < length; i++, j++) {
 		
 		if (buffer[i] == 0x7d) {
 			
@@ -47,8 +47,8 @@ char * performDestuffing(char *buffer, int length, int *destLength) {
 				
 				destuffed[j] = 0x7e;
 				
-				
 				i++;
+				
 			} else if (buffer[i + 1] == 0x5d) {
 				
 				destuffed[j] = 0x7d;
@@ -60,7 +60,7 @@ char * performDestuffing(char *buffer, int length, int *destLength) {
 				
 		} else
 			destuffed[j] = buffer[i];
-			
+		
 	}
 	
 	(* destLength) = j;
