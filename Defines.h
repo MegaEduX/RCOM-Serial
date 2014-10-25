@@ -6,14 +6,14 @@
 #ifndef __DEFINES__
 #define __DEFINES__
 
-#define BAUDRATE        B38400
-#define MODEMDEVICE     "/dev/ttyS4"
+//  #define BAUDRATE        B38400
+//  #define MODEMDEVICE     "/dev/ttyS4"
 #define _POSIX_SOURCE   1
 
 #define false   0
 #define true    1
 
-#define DEBUG   1
+#define DEBUG   0
 
 #define TIMEOUT 3
 

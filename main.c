@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
     
     printf("Path: %s\n", path);
     
-    char *serialPort = NULL;
+    char *serialPort = "/dev/ttyS4";
     
     long baudRate = B38400;
     
@@ -63,12 +63,12 @@ int main(int argc, char **argv) {
     
     printf("[Serial Setup] Waiting for connection...\n");
     
-    int fd = open(MODEMDEVICE, O_RDWR | O_NOCTTY);
+    int fd = open(serialPort, O_RDWR | O_NOCTTY);
     
     printf("[Serial Setup] Connected!\n");
     
     if (fd < 0) {
-        perror(MODEMDEVICE);
+        perror(serialPort);
         
         return -1;
     }
