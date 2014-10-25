@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
     
     long baudRate = B38400;
     
-    int maxTries = 3, timeout = 3;
+    int maxRetries = 3, timeout = 3;
     
     if (argc > 2) {
         serialPort = argv[2];
@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
     }
     
     if (argc > 4) {
-        maxTries = atoi(argv[4]);
+        maxRetries = atoi(argv[4]);
     }
     
     llsetup(serialPort, baudRate, 0, timeout, maxRetries);
