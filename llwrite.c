@@ -237,7 +237,7 @@ int llwrite(int fd, char *buffer, int length) {
 		printf("[llwrite] Sending I...\n");
 		
 		if ((bytesSent = sendInformationalMessage(linkLayerInstance->sequenceNumber, stuffedBuffer, buflen, stuffedBcc, bcclen, fd))) {
-			printf("[llwrite] Sent I. Waiting for ACK...\n");
+			printf("[llwrite] Sent I (%d bytes long). Waiting for ACK...\n", bytesSent);
 			
 			lltoggle();		//	Toggle it.
 			
