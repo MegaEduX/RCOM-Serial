@@ -64,5 +64,5 @@ int sendInformationalMessage(int messageNumber, char *data, int dataLen, char *b
 	
 	//	printf("Size of INF: %d ~ Size on Write: %d\n", (int)sizeof(INF), (int)((5 + dataLen + bccLen) * sizeof(char)));
 	
-	return write(fd, INF, sizeof(INF));
+	return write(fd, INF, (int)sizeof(INF), (int)((5 + dataLen + bccLen) * sizeof(char)));
 }
