@@ -26,6 +26,14 @@
 #include "llwrite.h"
 #include "llclose.h"
 
+void cleanup(int fd, FILE *file, struct termios *oldtio) {
+    if (file)
+        fclose(file);
+    
+    tcsetattr(fd, TCSANOW, oldtio);
+    close(fd);
+}
+
 int main(int argc, char **argv) {
     if (argc < 2) {
         char progname[512];
@@ -98,15 +106,21 @@ int main(int argc, char **argv) {
     
     if (tcsetattr(fd, TCSANOW, &newtio) == -1) {
         perror("tcsetattr");
+        
         return -1;
     }
     
-    llopen(fd, kApplicationStateTransmitter);
+    if (llopen(fd, kApplicationStateTransmitter) == -1) {
+        cleanup(fd, NULL, &oldtio);
+        
+        return -1;
+    }
     
     FILE *file = fopen(path, "r");
     
     if (file == NULL) {
         perror("fopen");
+        
         return -1;
     }
     
@@ -125,15 +139,15 @@ int main(int argc, char **argv) {
     TLVParameter *tlvArray = malloc(2 * sizeof(TLVParameter));
     
     tlvArray[0].type = 0;
-    tlvArray[0].length = sizeof(int);       //  Placeholder!
+    tlvArray[0].length = sizeof(char);
     
-    char value = (char) 1234;
+    char value = (char) size;
     
-    tlvArray[0].value = &value;             //  Placeholder!
+    tlvArray[0].value = &value;
     
     tlvArray[1].type = 1;
-    tlvArray[1].length = strlen(path);      //  Placeholder!
-    tlvArray[1].value = path;               //  Placeholder!
+    tlvArray[1].length = strlen(basename(path));
+    tlvArray[1].value = basename(path);
     
     char *beginPacket = makeControlPacket(kApplicationPacketControlStart, tlvArray, 2, &bplen);
     
@@ -143,9 +157,7 @@ int main(int argc, char **argv) {
      *  Data Packets
      */
     
-    int finished = false;
-    
-    while (!finished) {
+    while (true) {
         char ch;
         
         char *buf = malloc(255 * sizeof(char));
@@ -157,6 +169,8 @@ int main(int argc, char **argv) {
                 buf[i] = ch;
             else
                 break;
+            
+            i++;    //  I missed this. q_q
         }
         
         int plen = 0;
@@ -164,21 +178,15 @@ int main(int argc, char **argv) {
         char *dataPacket = makeDataPacket(seq, buf, i, &plen);
         
         if (llwrite(fd, dataPacket, plen) == -1) {
-            //
-            //  Error, even after retrying!
-            //
-            //  We should re-setup and retry.
-            //
-            //  Failing for now...
-            //
+            printf("[llwrite] Too many failures, giving up!\n");
             
-            printf("Error in llwrite!\n");
+            cleanup(fd, file, &oldtio);
             
-            break;
+            return -1;
         }
         
         if (i < 255)
-            finished = true;
+            break;
     }
     
     /*
@@ -195,10 +203,9 @@ int main(int argc, char **argv) {
     
     //  And back to original settings...
     
-    tcsetattr(fd, TCSANOW, &oldtio);
-    close(fd);
+    cleanup(fd, file, &oldtio);
     
-    printf("All done! Terminating...\n");
+    printf("[Main] All done! Terminating...\n");
     
     return 0;
 }

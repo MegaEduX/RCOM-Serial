@@ -54,7 +54,7 @@ int readAckMessage(int fd) {
 
 	signal(SIGALRM, llwrite_timeoutHandler);
 
-	alarm(TIMEOUT);
+	alarm(linkLayerInstance->timeout);
 
 	while (_llwrite_stop == false) {
 		if (state == kStateMachineStop)
@@ -227,7 +227,7 @@ char llwrite_calculateBcc(char *array, int length) {
 int llwrite(int fd, char *buffer, int length) {
 	char bcc = llwrite_calculateBcc(buffer, length);
 
-	int buflen = 0, bcclen = 0, bytesSent = 0, maxRetries = TIMEOUT, tries = 0;
+	int buflen = 0, bcclen = 0, bytesSent = 0, maxRetries = linkLayerInstance->timeout, tries = 0;
 
 	char *stuffedBuffer = performStuffing(buffer, length, &buflen);
 

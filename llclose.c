@@ -20,6 +20,7 @@
 #include "Shared.h"
 #include "Defines.h"
 #include "Messaging.h"
+#include "LinkLayer.h"
 
 int _llclose_times_retried = 0;
 
@@ -49,7 +50,7 @@ int llclose_readDiscMessage(int fd) {
 
 	signal(SIGALRM, llclose_timeoutHandler);
 
-	alarm(TIMEOUT);
+	alarm(linkLayerInstance->timeout);
 
 	while (_llclose_stop == false) {
 		if (state == kStateMachineStop)

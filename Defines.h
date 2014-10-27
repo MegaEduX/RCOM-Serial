@@ -15,7 +15,7 @@
 
 #define DEBUG   0
 
-#define TIMEOUT 3
+//  #define TIMEOUT 3
 
 #define F           0x7E
 #define A           0x03

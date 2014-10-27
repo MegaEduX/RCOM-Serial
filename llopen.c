@@ -20,6 +20,7 @@
 #include "Shared.h"
 #include "Defines.h"
 #include "Messaging.h"
+#include "LinkLayer.h"
 
 int _llopen_times_retried = 0;
 
@@ -49,7 +50,7 @@ int readUaMessage(int fd) {
 
 	signal(SIGALRM, llopen_timeoutHandler);
 
-	alarm(TIMEOUT);
+	alarm(linkLayerInstance->timeout);
 
 	while (_llopen_stop == false) {
 		if (state == kStateMachineStop)
@@ -194,7 +195,7 @@ int readUaMessage(int fd) {
 
 int llopen_pt2(int fd) {
 	if (_llopen_times_retried > 2) {
-		printf("[llopen] Couldn't establish a successful connection in %d tries, giving up...\n", _llopen_times_retried + 1);
+		printf("[llopen] Couldn't establish a successful connection in %d tries, giving up...\n", _llopen_times_retried);
 
 		return -1;
 	}
