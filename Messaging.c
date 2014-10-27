@@ -33,40 +33,24 @@ int sendNonInformationalMessage(char control, int fd) {
 }
 
 int sendInformationalMessage(int messageNumber, char *data, int dataLen, char *bcc, int bccLen, int fd) {
-	unsigned char *INF = malloc((6 + dataLen) * sizeof(char));
+	unsigned char *INF = malloc((5 + dataLen + bccLen) * sizeof(char));
+	
+	INF[0] = F;
+	INF[1] = A;
+	INF[2] = messageNumber << 6;
+	INF[3] = INF[1] ^ INF[2];
 
-	unsigned char *baseptr = INF;
+	int i = 4, j = 0;
 
-	(* baseptr) = F;
-	baseptr++;
+	for (j = 0; j < dataLen; i++, j++)
+		INF[i] = data[j];
 
-	(* baseptr) = A;
-	baseptr++;
-
-	(* baseptr) = messageNumber << 7;
-	baseptr++;
-
-	int i = 0;
-
-	for (i = 0; i < dataLen; i++) {
-		(* baseptr) = (* data);     //  I gotta check on this, though.
-		
-		//	printf("%.2x\n", *data);
-
-		data++;
-		baseptr++;
-	}
-
-	for (i = 0; i < bccLen; i++) {
-		(* baseptr) = (* bcc);      //  This is also untested. Same problem as above.
-		
-		//	printf("%.2x\n", *bcc);
-		
-		bcc++;
-		baseptr++;
-	}
-
-	(* baseptr) = F;
+	for (j = 0; j < bccLen; i++, j++)
+		INF[i] = bcc[j];
+	
+	INF[i] = F;
+	
+	printf("Size of INF: %d ~ Size on Write: %d\n", (int)sizeof(INF), (int)((5 + dataLen + bccLen) * sizeof(char)));
 
 	return write(fd, INF, sizeof(INF));
 }
