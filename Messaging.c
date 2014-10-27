@@ -39,18 +39,30 @@ int sendInformationalMessage(int messageNumber, char *data, int dataLen, char *b
 	INF[1] = A;
 	INF[2] = messageNumber << 6;
 	INF[3] = INF[1] ^ INF[2];
-
+	
+	printf("0: %.2x, 1: %.2x, 2: %.2x, 3: %.2x\n", INF[0], INF[1], INF[2], INF[3]);
+	
 	int i = 4, j = 0;
 
-	for (j = 0; j < dataLen; i++, j++)
+	for (j = 0; j < dataLen; i++, j++) {
 		INF[i] = data[j];
+		
+		printf("%d: %.2x ", i, INF[i]);
+	}
 
-	for (j = 0; j < bccLen; i++, j++)
+	for (j = 0; j < bccLen; i++, j++) {
 		INF[i] = bcc[j];
+		
+		printf("%d: %.2x ", i, INF[i]);
+	}
+	
+	printf("\n");
 	
 	INF[i] = F;
 	
-	printf("Size of INF: %d ~ Size on Write: %d\n", (int)sizeof(INF), (int)((5 + dataLen + bccLen) * sizeof(char)));
-
+	printf("F: %d\n", INF[i]);
+	
+	//	printf("Size of INF: %d ~ Size on Write: %d\n", (int)sizeof(INF), (int)((5 + dataLen + bccLen) * sizeof(char)));
+	
 	return write(fd, INF, sizeof(INF));
 }
