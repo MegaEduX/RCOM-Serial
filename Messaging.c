@@ -47,6 +47,12 @@ int sendInformationalMessage(int messageNumber, char *data, int dataLen, char *b
 	for (j = 0; j < dataLen; i++, j++) {
 		INF[i] = data[j];
 		
+		if (INF[i] == '\0') {
+			printf("'\0' here.\n");
+			
+			sleep(3);
+		}
+		
 		printf("%d: %.2x ", i, INF[i]);
 	}
 
